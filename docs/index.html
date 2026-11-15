@@ -2,96 +2,216 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
 <title>Apidiff — API Contract Check</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <style>
-*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0f172a;color:#e2e8f0}
-.wrap{max-width:760px;margin:0 auto;padding:28px 16px 40px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:22px}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-h1{margin:0;font-size:26px;letter-spacing:-.5px} .sub{color:#94a3b8;font-size:13px;margin-top:6px}
-.badge{font-weight:800;font-size:12px;padding:7px 10px;border-radius:999px;white-space:nowrap}
-.badge.breaking{background:#dc2626;color:#fff} .badge.safe{background:#16a34a;color:#fff} .badge.warn{background:#f59e0b;color:#111}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
-@media(max-width:560px){.grid{grid-template-columns:1fr}}
-.box{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:14px}
-.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;font-weight:700}
-.url{word-break:break-all;font-size:14px;margin-top:6px;color:#f1f5f9}
-.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.pill{background:#0f172a;border:1px solid #334155;border-radius:999px;padding:6px 10px;font-size:12px}
-h2{font-size:15px;margin:22px 0 10px}
-.row{display:flex;gap:10px;align-items:flex-start;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.row b{color:#fff} .icon{font-size:18px;line-height:1}
-.row.breaking{border-color:#7f1d1d} .row.added{border-color:#14532d}
-button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:12px;background:#fff;color:#111;font-weight:800;font-size:15px;cursor:pointer}
-.foot{color:#64748b;font-size:12px;text-align:center;margin-top:16px;line-height:1.6}
-.foot a{color:#93c5fd;text-decoration:none}
-code{background:#0f172a;padding:2px 6px;border-radius:6px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--text:#e2e8f0;--muted:#94a3b8;--red:#ef4444;--green:#22c55e;--blue:#3b82f6}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:90px}
+a{color:#93c5fd;text-decoration:none}
+.topbar{position:sticky;top:0;z-index:10;background:rgba(15,23,42,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;flex-shrink:0}
+.topbar h1{margin:0;font-size:18px;line-height:1.1;letter-spacing:-.3px}
+.topbar p{margin:2px 0 0;font-size:11px;color:var(--muted)}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hero h2{margin:0;font-size:24px;line-height:1.15}
+.hero .sub{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.5}
+.badge{font-weight:800;font-size:11px;padding:8px 10px;border-radius:999px;white-space:nowrap;text-align:center;line-height:1.3}
+.badge.breaking{background:#dc2626;color:#fff}
+.badge.safe{background:#16a34a;color:#fff}
+.badge.warn{background:#f59e0b;color:#111}
+.verdict{margin-top:16px;background:#7f1d1d;border:1px solid #ef4444;border-radius:12px;padding:12px;font-size:13px;line-height:1.5}
+.verdict.safe{background:#14532d;border-color:#22c55e}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+@media(max-width:480px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:#0f172a;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.section{margin-top:20px}
+.section h3{font-size:15px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.section h3 span{font-size:12px;color:var(--muted);font-weight:600}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.compare{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.box.old{border-top:3px solid var(--blue)} .box.new{border-top:3px solid var(--green)}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.url{word-break:break-all;font-size:13px;margin-top:8px;line-height:1.5}
+.tag{display:inline-block;margin-top:8px;font-size:11px;background:#0f172a;border:1px solid var(--line);padding:4px 8px;border-radius:999px}
+.change{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;gap:12px}
+.change.breaking{border-color:#7f1d1d;background:#1c1917}
+.change.safe{border-color:#14532d}
+.icon{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900}
+.icon.red{background:#fee2e2;color:#dc2626} .icon.green{background:#dcfce7;color:#16a34a}
+.change b{font-size:15px}
+.change p{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+.path{font-family:ui-monospace,monospace;font-size:11px;background:#0f172a;padding:3px 7px;border-radius:6px;display:inline-block;margin-top:6px;color:#cbd5e1}
+.how{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.how ol{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:#cbd5e1}
+.how code{background:#0f172a;padding:2px 6px;border-radius:6px;font-size:12px}
+.btn{width:100%;padding:15px;border:0;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer}
+.btn-primary{background:#fff;color:#111}
+.btn-ghost{background:transparent;color:#fff;border:1px solid var(--line);margin-top:10px}
+.foot{color:#64748b;font-size:12px;text-align:center;margin-top:20px;line-height:1.7;padding:0 10px}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;background:#1e293b;border-top:1px solid var(--line);display:flex;padding:10px 8px calc(10px + env(safe-area-inset-bottom));z-index:20}
+.bottomnav a{flex:1;text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
+.bottomnav a.active{color:#fff;font-weight:800}
+.bottomnav b{display:block;font-size:20px;line-height:1}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+details summary{font-size:13px;font-weight:700;cursor:pointer}
+details p{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 0}
 </style>
 </head>
 <body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <svg class="logo" viewBox="0 0 200 200"><rect width="200" height="200" rx="42" fill="#0f172a"/><text x="18" y="118" font-family="Arial" font-weight="900" font-size="92" fill="#3b82f6">{</text><text x="84" y="118" font-family="Arial" font-weight="900" font-size="92" fill="#22c55e">}</text><text x="88" y="68" font-family="Arial" font-weight="900" font-size="32" fill="#ef4444">−</text><text x="86" y="155" font-family="Arial" font-weight="900" font-size="32" fill="#22c55e">+</text></svg>
+  <div>
+    <h1>Apidiff</h1>
+    <p>API Contract Check • v1 vs v2</p>
+  </div>
+  <div style="margin-left:auto;font-size:22px">⚡</div>
+</header>
+
 <div class="wrap">
-<div class="card">
-<div class="top">
-<div>
-<h1>⚡ Apidiff Dashboard</h1>
-<div class="sub">API Contract Check • <span id="checkedAt">Loading…</span></div>
-</div>
-<span id="statusBadge" class="badge warn">CHECKING…</span>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <h2>Is v2 safe<br>to deploy?</h2>
+      <div class="sub">Comparing API contracts.<br><span id="checkedAt">Checking…</span></div>
+    </div>
+    <span id="statusBadge" class="badge warn">CHECKING…</span>
+  </div>
+
+  <div id="verdictBox" class="verdict">Loading verdict…</div>
+
+  <div class="stats">
+    <div class="stat"><b id="total">—</b><span>Total</span></div>
+    <div class="stat"><b id="breakingCount" style="color:var(--red)">—</b><span>Breaking</span></div>
+    <div class="stat"><b id="addedCount" style="color:var(--green)">—</b><span>Added</span></div>
+    <div class="stat"><b id="removedCount" style="color:var(--red)">—</b><span>Removed</span></div>
+  </div>
 </div>
 
-<div class="grid">
-<div class="box"><div class="label">Old API (Baseline)</div><div class="url" id="oldUrl">—</div></div>
-<div class="box"><div class="label">New API (Candidate)</div><div class="url" id="newUrl">—</div></div>
+<!-- COMPARE -->
+<div class="section">
+  <h3>Compare <span id="endpoint">GET /v1/users</span></h3>
+  <div class="compare">
+    <div class="box old">
+      <div class="label">🔵 Old API — Baseline</div>
+      <div class="url" id="oldUrl">—</div>
+      <span class="tag" id="oldLabel">v1 — David / main</span>
+    </div>
+    <div class="box new">
+      <div class="label">🟢 New API — Candidate</div>
+      <div class="url" id="newUrl">—</div>
+      <span class="tag" id="newLabel">v2 — Temitope</span>
+    </div>
+  </div>
 </div>
 
-<div class="meta" id="summary"></div>
-
-<h2>Changes Detected</h2>
-<div id="changes"></div>
-
-<button onclick="location.reload()">↻ Re-check</button>
-<div class="foot">Built as a Fusion Contribution by <b style="color:#cbd5e1">Temitope Abraham Olorunmola, Abuja</b><br>for <a href="https://github.com/callmidavid/apidiff">github.com/callmidavid/apidiff</a> • Source: <code>result.json</code></div>
+<!-- CHANGES -->
+<div class="section">
+  <h3>Changes Detected <span id="changesCount"></span></h3>
+  <div id="changes"></div>
 </div>
+
+<!-- HOW IT WORKS -->
+<div class="section">
+  <h3>How Apidiff Works</h3>
+  <div class="how">
+    <ol>
+      <li><b>API</b> = The contract — what fields your app promises, like <code>{ email, name }</code></li>
+      <li><b>Diff</b> = Compare old vs new — like <code>git diff</code> but for APIs</li>
+      <li><b>Breaking</b> = Removed / renamed field = old apps will crash ❌</li>
+      <li><b>Safe</b> = Added field = old apps can ignore it ✅</li>
+    </ol>
+  </div>
 </div>
+
+<!-- FAQ -->
+<div class="section">
+  <h3>For David</h3>
+  <details><summary>What does BREAKING mean?</summary><p>If you deploy v2 as-is, any client reading <code>user.email</code> will fail. Restore <code>email</code> or ship as <code>/v2/users</code> with a migration note.</p></details>
+  <details><summary>What does SAFE mean?</summary><p>Adding <code>phone</code> is safe. Old clients ignore new fields. No crash.</p></details>
+  <details><summary>Where is the data from?</summary><p>From <code>docs/result.json</code> in this repo. No fake data. Edit that file and this page updates automatically.</p></details>
+</div>
+
+<!-- ACTIONS -->
+<div class="section">
+  <button class="btn btn-primary" onclick="location.reload()">↻ Re-check Now</button>
+  <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(location.href);this.textContent='✅ Link Copied!'">🔗 Copy Live Link</button>
+  <a href="https://github.com/callmidavid/apidiff" style="display:block;text-align:center;margin-top:14px;font-size:13px">View Source on GitHub →</a>
+</div>
+
+<div class="foot">
+  Built as a Fusion Contribution by<br><b style="color:#cbd5e1">Temitope Abraham Olorunmola, Abuja</b><br>
+  for <a href="https://github.com/callmidavid/apidiff">github.com/callmidavid/apidiff</a><br>
+  Source: <code>result.json</code> • Logo: <code>{ − / + }</code> = API Diff
+</div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottomnav">
+  <a href="#" class="active"><b>⚡</b>Check</a>
+  <a href="#changes"><b>🔍</b>Changes</a>
+  <a href="https://github.com/callmidavid/apidiff"><b>💻</b>GitHub</a>
+  <a href="https://topshugar.github.io/apidiff/"><b>🔗</b>Share</a>
+</nav>
 
 <script>
 async function load(){
   try{
-    const r = await fetch('result.json?v=' + Date.now());
+    const r = await fetch('result.json?v='+Date.now());
     const d = await r.json();
-
-    // Support both formats: {old,new,changes} or {old_url,new_url,diff}
-    const oldUrl = d.old || d.old_url || d.baseline || '—';
-    const newUrl = d.new || d.new_url || d.candidate || '—';
-    const changes = d.changes || d.diff || d.differences || [];
-    const breaking = d.breaking ?? changes.some(c => (c.type||'').toLowerCase().includes('remov') || c.breaking || c.severity==='breaking');
+    const oldUrl = d.old || d.old_url || '—';
+    const newUrl = d.new || d.new_url || '—';
+    const changes = d.changes || d.diff || [];
+    const breaking = d.breaking ?? changes.some(c=>c.breaking || (c.type||'').includes('remov'));
+    const removed = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('remov')).length;
+    const added = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('add')).length;
 
     document.getElementById('oldUrl').textContent = oldUrl;
     document.getElementById('newUrl').textContent = newUrl;
-    document.getElementById('checkedAt').textContent = d.checked_at || d.timestamp || new Date().toLocaleString();
+    document.getElementById('oldLabel').textContent = d.old_label || 'v1 — Baseline';
+    document.getElementById('newLabel').textContent = d.new_label || 'v2 — Candidate';
+    document.getElementById('checkedAt').textContent = 'Checked: ' + (d.checked_at || new Date().toLocaleString());
+    document.getElementById('endpoint').textContent = d.endpoint || 'GET /v1/users';
+    document.getElementById('total').textContent = changes.length;
+    document.getElementById('breakingCount').textContent = changes.filter(c=>c.breaking).length;
+    document.getElementById('addedCount').textContent = added;
+    document.getElementById('removedCount').textContent = removed;
+    document.getElementById('changesCount').textContent = changes.length + ' found';
 
     const badge = document.getElementById('statusBadge');
-    if(breaking){ badge.textContent='⛔ BREAKING — DO NOT DEPLOY'; badge.className='badge breaking'; }
-    else if(changes.length){ badge.textContent='✅ SAFE — NON-BREAKING'; badge.className='badge safe'; }
-    else { badge.textContent='✅ NO CHANGES'; badge.className='badge safe'; }
+    const verdict = document.getElementById('verdictBox');
+    if(breaking){
+      badge.textContent = '⛔ BREAKING'; badge.className='badge breaking';
+      verdict.textContent = d.verdict || '⛔ BREAKING — DO NOT DEPLOY. A removed field will break existing clients.';
+      verdict.className='verdict';
+    } else {
+      badge.textContent = '✅ SAFE'; badge.className='badge safe';
+      verdict.textContent = '✅ SAFE TO DEPLOY — Only non-breaking additions.';
+      verdict.className='verdict safe';
+    }
 
-    const removed = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('remov')).length;
-    const added = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('add')).length;
-    document.getElementById('summary').innerHTML = `
-      <span class="pill">Total: <b>${changes.length}</b></span>
-      <span class="pill">❌ Removed: <b>${removed}</b></span>
-      <span class="pill">✅ Added: <b>${added}</b></span>
-      <span class="pill">${breaking?'🔴 Breaking':'🟢 Safe'}</span>`;
-
-    document.getElementById('changes').innerHTML = changes.length ? changes.map(c=>{
-      const txt = typeof c==='string' ? c : (c.message || `${c.type||'Change'}: ${c.field||c.path||c.node||JSON.stringify(c)}`);
-      const isBreaking = txt.toLowerCase().includes('remov') || c.breaking;
-      return `<div class="row ${isBreaking?'breaking':'added'}"><span class="icon">${isBreaking?'❌':'✅'}</span><div>${txt} ${isBreaking?'<div style="font-size:12px;color:#fca5a5;margin-top:4px">Breaking: clients using this field will fail</div>':''}</div></div>`;
-    }).join('') : '<div class="row"><span>✅</span><div>No differences found. Contracts match.</div></div>';
-
+    document.getElementById('changes').innerHTML = changes.map(c=>{
+      const isB = c.breaking;
+      const msg = c.message || c.type+': '+c.field;
+      return `<div class="change ${isB?'breaking':'safe'}">
+        <div class="icon ${isB?'red':'green'}">${isB?'−':'+'}</div>
+        <div><b>${isB?'Removed: ':'Added: '}${c.field||''}</b><p>${msg}</p><span class="path">${c.path||c.field||''} • ${isB?'BREAKING':'SAFE'}</span></div>
+      </div>`;
+    }).join('') || '<div class="change safe"><div class="icon green">✓</div><div><b>No changes</b><p>Contracts match.</p></div></div>';
   }catch(e){
-    document.getElementById('changes').innerHTML = '<div class="row">⚠️ Could not load <code>result.json</code>. Run the checker to generate a fresh result.</div>';
+    document.getElementById('changes').innerHTML = '<div class="change"><div>⚠️ Could not load result.json</div></div>';
   }
 }
 load();
