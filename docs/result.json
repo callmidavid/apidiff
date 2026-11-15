@@ -1,7 +1,10 @@
 {
-  "old": "https://api.example.com/v1/users",
-  "new": "http://localhost:3000/v1/users",
+  "old": "https://callmidavid.github.io/apidiff/api/v1.json",
+  "new": "https://topshugar.github.io/apidiff/api/v2.json",
+  "checked_at": "2026-11-15",
   "breaking": true,
-  "removed": ["email"],
-  "added": ["phone"]
+  "changes": [
+    {"type": "removed", "field": "email", "message": "Removed field: email — breaking, existing clients will fail", "breaking": true},
+    {"type": "added", "field": "phone", "message": "Added field: phone — safe, backwards compatible", "breaking": false}
+  ]
 }
