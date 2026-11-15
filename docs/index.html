@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apidiff Dashboard</title>
+<style>
+body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
+.card { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; }
+.safe { background: #16a34a; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; }
+.breaking { background: #dc2626; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; }
+.item { background: #334155; padding: 10px; margin: 8px 0; border-radius: 8px; }
+small { color: #94a3b8; }
+button { background: white; color: black; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="card">
+<h2>⚡ Apidiff Dashboard</h2>
+<p><small>API Contract Check • Contribution by Temitope Abraham Olorunmola, Abuja</small></p>
+<div id="status">Loading...</div>
+<div id="list"></div>
+<button onclick="load()">Re-check</button>
+<p><small>Built as a Fusion Contribution to github.com/callmidavid/apidiff</small></p>
+</div>
+
+<script>
+async function load(){
+  try {
+    const res = await fetch('./result.json');
+    const data = await res.json();
+    const statusEl = document.getElementById('status');
+    const listEl = document.getElementById('list');
+
+    if(data.breaking){
+      statusEl.innerHTML = '<div class="breaking">🔴 BREAKING CHANGE — DO NOT DEPLOY</div>';
+    } else {
+      statusEl.innerHTML = '<div class="safe">🟢 SAFE — NO BREAKING CHANGE</div>';
+    }
+
+    let html = '';
+    html += `<div class="item"><b>Old API:</b> ${data.old}</div>`;
+    html += `<div class="item"><b>New API:</b> ${data.new}</div>`;
+
+    if(data.removed && data.removed.length){
+      data.removed.forEach(f => {
+        html += `<div class="item">❌ Removed field: <b>${f}</b></div>`;
+      });
+    }
+    if(data.added && data.added.length){
+      data.added.forEach(f => {
+        html += `<div class="item">✅ Added field: <b>${f}</b></div>`;
+      });
+    }
+    if((!data.removed || !data.removed.length) && (!data.added || !data.added.length)){
+      html += `<div class="item">No field changes detected.</div>`;
+    }
+    listEl.innerHTML = html;
+  } catch(e){
+    document.getElementById('status').innerHTML = '<div class="breaking">No result.json found — Run Apidiff first</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>
