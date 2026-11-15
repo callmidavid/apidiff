@@ -1,0 +1,7 @@
+{
+  "old": "https://api.example.com/v1/users",
+  "new": "http://localhost:3000/v1/users",
+  "breaking": true,
+  "removed": ["email"],
+  "added": ["phone"]
+}
