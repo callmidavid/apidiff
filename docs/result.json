@@ -5,15 +5,9 @@
   "new": "https://topshugar.github.io/apidiff/api/v2.json",
   "old_label": "v1 — Baseline (David / main)",
   "new_label": "v2 — Candidate (Temitope / Fusion Contribution)",
-  "checked_at": "2026-11-15 22:10 WAT",
+  "checked_at": "15 November 2026, 22:10 WAT",
   "breaking": true,
-  "summary": {
-    "total": 2,
-    "breaking": 1,
-    "non_breaking": 1,
-    "removed": 1,
-    "added": 1
-  },
+  "summary": { "total": 2, "breaking": 1, "non_breaking": 1, "removed": 1, "added": 1 },
   "changes": [
     {
       "type": "removed",
@@ -29,9 +23,9 @@
       "path": "users[].phone",
       "severity": "non-breaking",
       "breaking": false,
-      "message": "Added field: phone — SAFE. Backwards compatible, old clients can ignore it."
+      "message": "Added field: phone — SAFE. Backwards compatible; existing clients may ignore it."
     }
   ],
-  "verdict": "⛔ BREAKING CHANGE — DO NOT DEPLOY v2 until email is restored or versioned as /v2/users",
+  "verdict": "⛔ BREAKING CHANGE — DO NOT DEPLOY v2 until email is restored or released as /v2/users",
   "contributor": "Temitope Abraham Olorunmola, Abuja — Fusion Contribution for github.com/callmidavid/apidiff"
 }
