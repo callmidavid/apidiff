@@ -1,63 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Apidiff Dashboard</title>
+<title>Apidiff — API Contract Check</title>
 <style>
-body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
-.card { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; }
-.safe { background: #16a34a; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; }
-.breaking { background: #dc2626; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; }
-.item { background: #334155; padding: 10px; margin: 8px 0; border-radius: 8px; }
-small { color: #94a3b8; }
-button { background: white; color: black; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0f172a;color:#e2e8f0}
+.wrap{max-width:760px;margin:0 auto;padding:28px 16px 40px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:22px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{margin:0;font-size:26px;letter-spacing:-.5px} .sub{color:#94a3b8;font-size:13px;margin-top:6px}
+.badge{font-weight:800;font-size:12px;padding:7px 10px;border-radius:999px;white-space:nowrap}
+.badge.breaking{background:#dc2626;color:#fff} .badge.safe{background:#16a34a;color:#fff} .badge.warn{background:#f59e0b;color:#111}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+.box{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:14px}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;font-weight:700}
+.url{word-break:break-all;font-size:14px;margin-top:6px;color:#f1f5f9}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.pill{background:#0f172a;border:1px solid #334155;border-radius:999px;padding:6px 10px;font-size:12px}
+h2{font-size:15px;margin:22px 0 10px}
+.row{display:flex;gap:10px;align-items:flex-start;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.row b{color:#fff} .icon{font-size:18px;line-height:1}
+.row.breaking{border-color:#7f1d1d} .row.added{border-color:#14532d}
+button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:12px;background:#fff;color:#111;font-weight:800;font-size:15px;cursor:pointer}
+.foot{color:#64748b;font-size:12px;text-align:center;margin-top:16px;line-height:1.6}
+.foot a{color:#93c5fd;text-decoration:none}
+code{background:#0f172a;padding:2px 6px;border-radius:6px}
 </style>
 </head>
 <body>
+<div class="wrap">
 <div class="card">
-<h2>⚡ Apidiff Dashboard</h2>
-<p><small>API Contract Check • Contribution by Temitope Abraham Olorunmola, Abuja</small></p>
-<div id="status">Loading...</div>
-<div id="list"></div>
-<button onclick="load()">Re-check</button>
-<p><small>Built as a Fusion Contribution to github.com/callmidavid/apidiff</small></p>
+<div class="top">
+<div>
+<h1>⚡ Apidiff Dashboard</h1>
+<div class="sub">API Contract Check • <span id="checkedAt">Loading…</span></div>
+</div>
+<span id="statusBadge" class="badge warn">CHECKING…</span>
+</div>
+
+<div class="grid">
+<div class="box"><div class="label">Old API (Baseline)</div><div class="url" id="oldUrl">—</div></div>
+<div class="box"><div class="label">New API (Candidate)</div><div class="url" id="newUrl">—</div></div>
+</div>
+
+<div class="meta" id="summary"></div>
+
+<h2>Changes Detected</h2>
+<div id="changes"></div>
+
+<button onclick="location.reload()">↻ Re-check</button>
+<div class="foot">Built as a Fusion Contribution by <b style="color:#cbd5e1">Temitope Abraham Olorunmola, Abuja</b><br>for <a href="https://github.com/callmidavid/apidiff">github.com/callmidavid/apidiff</a> • Source: <code>result.json</code></div>
+</div>
 </div>
 
 <script>
 async function load(){
-  try {
-    const res = await fetch('./result.json');
-    const data = await res.json();
-    const statusEl = document.getElementById('status');
-    const listEl = document.getElementById('list');
+  try{
+    const r = await fetch('result.json?v=' + Date.now());
+    const d = await r.json();
 
-    if(data.breaking){
-      statusEl.innerHTML = '<div class="breaking">🔴 BREAKING CHANGE — DO NOT DEPLOY</div>';
-    } else {
-      statusEl.innerHTML = '<div class="safe">🟢 SAFE — NO BREAKING CHANGE</div>';
-    }
+    // Support both formats: {old,new,changes} or {old_url,new_url,diff}
+    const oldUrl = d.old || d.old_url || d.baseline || '—';
+    const newUrl = d.new || d.new_url || d.candidate || '—';
+    const changes = d.changes || d.diff || d.differences || [];
+    const breaking = d.breaking ?? changes.some(c => (c.type||'').toLowerCase().includes('remov') || c.breaking || c.severity==='breaking');
 
-    let html = '';
-    html += `<div class="item"><b>Old API:</b> ${data.old}</div>`;
-    html += `<div class="item"><b>New API:</b> ${data.new}</div>`;
+    document.getElementById('oldUrl').textContent = oldUrl;
+    document.getElementById('newUrl').textContent = newUrl;
+    document.getElementById('checkedAt').textContent = d.checked_at || d.timestamp || new Date().toLocaleString();
 
-    if(data.removed && data.removed.length){
-      data.removed.forEach(f => {
-        html += `<div class="item">❌ Removed field: <b>${f}</b></div>`;
-      });
-    }
-    if(data.added && data.added.length){
-      data.added.forEach(f => {
-        html += `<div class="item">✅ Added field: <b>${f}</b></div>`;
-      });
-    }
-    if((!data.removed || !data.removed.length) && (!data.added || !data.added.length)){
-      html += `<div class="item">No field changes detected.</div>`;
-    }
-    listEl.innerHTML = html;
-  } catch(e){
-    document.getElementById('status').innerHTML = '<div class="breaking">No result.json found — Run Apidiff first</div>';
+    const badge = document.getElementById('statusBadge');
+    if(breaking){ badge.textContent='⛔ BREAKING — DO NOT DEPLOY'; badge.className='badge breaking'; }
+    else if(changes.length){ badge.textContent='✅ SAFE — NON-BREAKING'; badge.className='badge safe'; }
+    else { badge.textContent='✅ NO CHANGES'; badge.className='badge safe'; }
+
+    const removed = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('remov')).length;
+    const added = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('add')).length;
+    document.getElementById('summary').innerHTML = `
+      <span class="pill">Total: <b>${changes.length}</b></span>
+      <span class="pill">❌ Removed: <b>${removed}</b></span>
+      <span class="pill">✅ Added: <b>${added}</b></span>
+      <span class="pill">${breaking?'🔴 Breaking':'🟢 Safe'}</span>`;
+
+    document.getElementById('changes').innerHTML = changes.length ? changes.map(c=>{
+      const txt = typeof c==='string' ? c : (c.message || `${c.type||'Change'}: ${c.field||c.path||c.node||JSON.stringify(c)}`);
+      const isBreaking = txt.toLowerCase().includes('remov') || c.breaking;
+      return `<div class="row ${isBreaking?'breaking':'added'}"><span class="icon">${isBreaking?'❌':'✅'}</span><div>${txt} ${isBreaking?'<div style="font-size:12px;color:#fca5a5;margin-top:4px">Breaking: clients using this field will fail</div>':''}</div></div>`;
+    }).join('') : '<div class="row"><span>✅</span><div>No differences found. Contracts match.</div></div>';
+
+  }catch(e){
+    document.getElementById('changes').innerHTML = '<div class="row">⚠️ Could not load <code>result.json</code>. Run the checker to generate a fresh result.</div>';
   }
 }
 load();
