@@ -1,0 +1,60 @@
+# Apidiff — API Contract Check
+# Purpose: Compare the baseline API contract (v1) with the candidate (v2)
+# on every pull request. Fail the build if a breaking change is detected.
+# Classification: removed = breaking, type changed = breaking, added = safe.
+# Language: en-GB. Comments describe intent, not just behaviour.
+
+name: Apidiff — API Contract Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  apidiff:
+    name: Compare API contracts
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Obtain the repository contents for this pull request.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python. The checker is written in Python
+      # because it requires no additional dependencies.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Step 3: Run the comparison. The script writes docs/result.json
+      # and exits with code 1 if a breaking change is found.
+      - name: Run Apidiff check
+        id: check
+        run: python scripts/apidiff_check.py
+
+      # Step 4: Publish the result as a summary on the pull request.
+      # This ensures the verdict is visible without opening the logs.
+      - name: Publish verdict to summary
+        if: always()
+        run: |
+          echo "## Apidiff — API Contract Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat docs/result.md >> $GITHUB_STEP_SUMMARY || echo "Result file was not generated."
+
+      # Step 5: Upload the artefacts for review.
+      # Reviewers may download result.json and result.md from the run.
+      - name: Upload Apidiff artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apidiff-result
+          path: |
+            docs/result.json
+            docs/result.md

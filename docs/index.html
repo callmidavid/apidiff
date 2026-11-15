@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Apidiff compares two versions of an API contract and identifies breaking changes before deployment.">
+<title>Apidiff — API Contract Check</title>
+<link rel="icon" href="data:image/svg+xml,[STRIPPED]">
+<style>
+/* Base layout: dark theme, mobile-first. Colours defined once for consistency. */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--text:#e2e8f0;--muted:#94a3b8;--red:#ef4444;--green:#22c55e;--blue:#3b82f6}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:90px}
+a{color:#93c5fd;text-decoration:none}
+/* Sticky header: remains visible whilst scrolling on mobile. */
+.topbar{position:sticky;top:0;z-index:10;background:rgba(15,23,42,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;flex-shrink:0}
+.topbar h1{margin:0;font-size:18px;line-height:1.1;letter-spacing:-.3px}
+.topbar p{margin:2px 0 0;font-size:11px;color:var(--muted)}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+/* Hero: primary verdict. Breaking is red, safe is green. */
+.hero{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hero h2{margin:0;font-size:24px;line-height:1.15}
+.hero .sub{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.5}
+.badge{font-weight:800;font-size:11px;padding:8px 10px;border-radius:999px;white-space:nowrap;text-align:center;line-height:1.3}
+.badge.breaking{background:#dc2626;color:#fff}
+.badge.safe{background:#16a34a;color:#fff}
+.badge.warn{background:#f59e0b;color:#111}
+.verdict{margin-top:16px;background:#7f1d1d;border:1px solid #ef4444;border-radius:12px;padding:12px;font-size:13px;line-height:1.5}
+.verdict.safe{background:#14532d;border-color:#22c55e}
+/* Summary statistics: total, breaking, added and removed changes. */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+@media(max-width:480px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:#0f172a;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.section{margin-top:20px}
+.section h3{font-size:15px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.section h3 span{font-size:12px;color:var(--muted);font-weight:600}
+/* Comparison: baseline (old) versus candidate (new). Stacks on narrow screens. */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.compare{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.box.old{border-top:3px solid var(--blue)} .box.new{border-top:3px solid var(--green)}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.url{word-break:break-all;font-size:13px;margin-top:8px;line-height:1.5}
+.tag{display:inline-block;margin-top:8px;font-size:11px;background:#0f172a;border:1px solid var(--line);padding:4px 8px;border-radius:999px}
+/* Change cards: red indicates breaking, green indicates backwards compatible. */
+.change{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;gap:12px}
+.change.breaking{border-color:#7f1d1d;background:#1c1917}
+.change.safe{border-color:#14532d}
+.icon{width:40px;height:40px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900}
+.icon.red{background:#fee2e2;color:#dc2626} .icon.green{background:#dcfce7;color:#16a34a}
+.change b{font-size:15px}
+.change p{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+.path{font-family:ui-monospace,monospace;font-size:11px;background:#0f172a;padding:3px 7px;border-radius:6px;display:inline-block;margin-top:6px;color:#cbd5e1}
+.how{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.how ol{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:#cbd5e1}
+.how code{background:#0f172a;padding:2px 6px;border-radius:6px;font-size:12px}
+/* Playground inputs: monospaced for JSON readability, full width for mobile. */
+textarea{width:100%;margin:8px 0 14px;background:#0f172a;color:#e2e8f0;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.5;resize:vertical}
+.btn{width:100%;padding:15px;border:0;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer}
+.btn-primary{background:#fff;color:#111}
+.btn-ghost{background:transparent;color:#fff;border:1px solid var(--line);margin-top:10px}
+.foot{color:#64748b;font-size:12px;text-align:center;margin-top:20px;line-height:1.7;padding:0 10px}
+/* Fixed bottom navigation: app-style navigation for mobile devices. */
+.bottomnav{position:fixed;left:0;right:0;bottom:0;background:#1e293b;border-top:1px solid var(--line);display:flex;padding:10px 8px calc(10px + env(safe-area-inset-bottom));z-index:20}
+.bottomnav a{flex:1;text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
+.bottomnav a.active{color:#fff;font-weight:800}
+.bottomnav b{display:block;font-size:20px;line-height:1}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+details summary{font-size:13px;font-weight:700;cursor:pointer}
+details p{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 0}
+</style>
+</head>
+<body>
+
+<!-- Header: logo and project title. Logo encodes the concept: { } = API, − = removed, + = added. -->
+<header class="topbar">
+  <svg class="logo" viewBox="0 0 200 200" role="img" aria-label="Apidiff logo"><rect width="200" height="200" rx="42" fill="#0f172a"/><text x="18" y="118" font-family="Arial" font-weight="900" font-size="92" fill="#3b82f6">{</text><text x="84" y="118" font-family="Arial" font-weight="900" font-size="92" fill="#22c55e">}</text><text x="88" y="68" font-family="Arial" font-weight="900" font-size="32" fill="#ef4444">−</text><text x="86" y="155" font-family="Arial" font-weight="900" font-size="32" fill="#22c55e">+</text></svg>
+  <div>
+    <h1>Apidiff</h1>
+    <p>API Contract Check • v1 compared with v2</p>
+  </div>
+  <div style="margin-left:auto;font-size:22px" aria-hidden="true">⚡</div>
+</header>
+
+<div class="wrap">
+
+<!-- Verdict: answers the principal question — is the candidate safe to deploy? -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <h2>Is v2 safe<br>to deploy?</h2>
+      <div class="sub">Comparing API contracts.<br><span id="checkedAt">Checking…</span></div>
+    </div>
+    <span id="statusBadge" class="badge warn">CHECKING…</span>
+  </div>
+  <div id="verdictBox" class="verdict">Loading verdict…</div>
+  <div class="stats">
+    <div class="stat"><b id="total">—</b><span>Total</span></div>
+    <div class="stat"><b id="breakingCount" style="color:var(--red)">—</b><span>Breaking</span></div>
+    <div class="stat"><b id="addedCount" style="color:var(--green)">—</b><span>Added</span></div>
+    <div class="stat"><b id="removedCount" style="color:var(--red)">—</b><span>Removed</span></div>
+  </div>
+</div>
+
+<!-- Comparison: baseline contract and candidate contract. -->
+<div class="section">
+  <h3>Comparison <span id="endpoint">GET /v1/users</span></h3>
+  <div class="compare">
+    <div class="box old">
+      <div class="label">🔵 Old API — Baseline</div>
+      <div class="url" id="oldUrl">—</div>
+      <span class="tag" id="oldLabel">v1 — David / main</span>
+    </div>
+    <div class="box new">
+      <div class="label">🟢 New API — Candidate</div>
+      <div class="url" id="newUrl">—</div>
+      <span class="tag" id="newLabel">v2 — Temitope</span>
+    </div>
+  </div>
+</div>
+
+<!-- Changes: each detected difference, classified as breaking or backwards compatible. -->
+<div class="section">
+  <h3>Changes Detected <span id="changesCount"></span></h3>
+  <div id="changes"></div>
+</div>
+
+<!-- Playground: live comparison. Allows the reviewer to test any two contracts without editing result.json. -->
+<div class="section" id="playground">
+  <h3>Live Playground <span>Try it now</span></h3>
+  <div class="how">
+    <p style="font-size:13px;color:#cbd5e1;line-height:1.6;margin:0 0 12px">Paste the old contract in the first box and the new contract in the second. Apidiff will compare the fields and classify each change as breaking or safe.</p>
+    <label style="font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--muted)">OLD API — BASELINE (v1)</label>
+    <textarea id="oldInput" rows="6">{
+  "email": "ada@example.com",
+  "name": "Ada",
+  "age": 30
+}</textarea>
+    <label style="font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--muted)">NEW API — CANDIDATE (v2)</label>
+    <textarea id="newInput" rows="6">{
+  "name": "Ada",
+  "age": "30",
+  "phone": "+234 800 000 0000"
+}</textarea>
+    <button class="btn btn-primary" onclick="analysePlayground()">Analyse Comparison →</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Restore Example</button>
+    <div id="playgroundResult" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- Explanation: defines API, diff, breaking and safe in plain terms. -->
+<div class="section">
+  <h3>How Apidiff Works</h3>
+  <div class="how">
+    <ol>
+      <li><b>API</b> — The contract: the fields an application promises to provide, for example <code>{ email, name }</code>.</li>
+      <li><b>Diff</b> — A comparison of the old and new contracts, similar to <code>git diff</code> but for APIs.</li>
+      <li><b>Breaking</b> — A removed, renamed, or type-changed field. Existing clients that rely on it will fail.</li>
+      <li><b>Safe</b> — An added field. Existing clients may ignore it without adverse behaviour.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Guidance for the reviewer. -->
+<div class="section">
+  <h3>Notes for the Reviewer</h3>
+  <details><summary>What does BREAKING mean?</summary><p>If v2 is deployed as it stands, any client reading <code>user.email</code> will fail. Restore <code>email</code>, or release as <code>/v2/users</code> with a migration note.</p></details>
+  <details><summary>What does SAFE mean?</summary><p>Adding <code>phone</code> is safe. Existing clients ignore new fields. There is no loss of functionality.</p></details>
+  <details><summary>Where does the data originate?</summary><p>From <code>docs/result.json</code> in this repository. The page renders directly from that file; updating the file updates the page automatically.</p></details>
+</div>
+
+<!-- Actions: refresh the check, copy the live link, or view the source. -->
+<div class="section">
+  <button class="btn btn-primary" onclick="location.reload()">↻ Re-check Now</button>
+  <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(location.href);this.textContent='✓ Link Copied'">🔗 Copy Live Link</button>
+  <a href="https://github.com/callmidavid/apidiff" style="display:block;text-align:center;margin-top:14px;font-size:13px">View Source on GitHub →</a>
+</div>
+
+<div class="foot">
+  Prepared as a Fusion Contribution by<br><b style="color:#cbd5e1">Temitope Abraham Olorunmola, Abuja</b><br>
+  for <a href="https://github.com/callmidavid/apidiff">github.com/callmidavid/apidiff</a><br>
+  Source: <code>result.json</code> • Logo: <code>{ − / + }</code> — API Diff
+</div>
+</div>
+
+<!-- Bottom navigation: primary sections of the page. -->
+<nav class="bottomnav">
+  <a href="#" class="active"><b>⚡</b>Check</a>
+  <a href="#playground"><b>🧪</b>Playground</a>
+  <a href="https://github.com/callmidavid/apidiff"><b>💻</b>GitHub</a>
+  <a href="https://topshugar.github.io/apidiff/"><b>🔗</b>Share</a>
+</nav>
+
+<script>
+// Load the comparison result and render it.
+// Data source: docs/result.json — generated by the checker, not hard-coded in this page.
+// Breaking = a field was removed, renamed, or had its type changed. Safe = a field was added only.
+async function load(){
+  try{
+    // Cache-busting query ensures the latest result is fetched on each visit.
+    const r = await fetch('result.json?v='+Date.now());
+    const d = await r.json();
+    const oldUrl = d.old || d.old_url || '—';
+    const newUrl = d.new || d.new_url || '—';
+    const changes = d.changes || d.diff || [];
+    const breaking = d.breaking ?? changes.some(c=>c.breaking || (c.type||'').includes('remov'));
+    const removed = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('remov')).length;
+    const added = changes.filter(c=>JSON.stringify(c).toLowerCase().includes('add')).length;
+    document.getElementById('oldUrl').textContent = oldUrl;
+    document.getElementById('newUrl').textContent = newUrl;
+    document.getElementById('oldLabel').textContent = d.old_label || 'v1 — Baseline';
+    document.getElementById('newLabel').textContent = d.new_label || 'v2 — Candidate';
+    document.getElementById('checkedAt').textContent = 'Checked: ' + (d.checked_at || new Date().toLocaleString('en-GB'));
+    document.getElementById('endpoint').textContent = d.endpoint || 'GET /v1/users';
+    document.getElementById('total').textContent = changes.length;
+    document.getElementById('breakingCount').textContent = changes.filter(c=>c.breaking).length;
+    document.getElementById('addedCount').textContent = added;
+    document.getElementById('removedCount').textContent = removed;
+    document.getElementById('changesCount').textContent = changes.length + ' found';
+    const badge = document.getElementById('statusBadge');
+    const verdict = document.getElementById('verdictBox');
+    if(breaking){
+      badge.textContent = '⛔ BREAKING'; badge.className='badge breaking';
+      verdict.textContent = d.verdict || '⛔ BREAKING — DO NOT DEPLOY. A removed field will break existing clients.';
+      verdict.className='verdict';
+    } else {
+      badge.textContent = '✓ SAFE'; badge.className='badge safe';
+      verdict.textContent = '✓ SAFE TO DEPLOY — Only non-breaking additions were detected.';
+      verdict.className='verdict safe';
+    }
+    // Render each change as a card. The icon reflects the classification.
+    document.getElementById('changes').innerHTML = changes.map(c=>{
+      const isB = c.breaking;
+      const msg = c.message || c.type+': '+c.field;
+      return `<div class="change ${isB?'breaking':'safe'}">
+        <div class="icon ${isB?'red':'green'}">${isB?'−':'+'}</div>
+        <div><b>${isB?'Removed: ':'Added: '}${c.field||''}</b><p>${msg}</p><span class="path">${c.path||c.field||''} • ${isB?'BREAKING':'SAFE'}</span></div>
+      </div>`;
+    }).join('') || '<div class="change safe"><div class="icon green">✓</div><div><b>No changes</b><p>The contracts match.</p></div></div>';
+  }catch(e){
+    document.getElementById('changes').innerHTML = '<div class="change"><div>Unable to load result.json. Please generate a fresh result and try again.</div></div>';
+  }
+}
+load();
+
+// Playground logic: compares top-level fields of two JSON objects.
+// Classification: removed = breaking, type changed = breaking, added = safe.
+function analysePlayground(){
+  const box = document.getElementById('playgroundResult');
+  try{
+    const oldObj = JSON.parse(document.getElementById('oldInput').value);
+    const newObj = JSON.parse(document.getElementById('newInput').value);
+    const oldKeys = Object.keys(oldObj);
+    const newKeys = Object.keys(newObj);
+    let html = '';
+    let breaking = 0, safe = 0;
+    oldKeys.forEach(k=>{
+      if(!(k in newObj)){
+        breaking++;
+        html += `<div class="change breaking"><div class="icon red">−</div><div><b>Removed: ${k}</b><p>Field <code>${k}</code> was removed — BREAKING. Existing clients will fail.</p></div></div>`;
+      } else if(typeof oldObj[k] !== typeof newObj[k]){
+        breaking++;
+        html += `<div class="change breaking"><div class="icon red">!</div><div><b>Type changed: ${k}</b><p><code>${k}</code> changed from <code>${typeof oldObj[k]}</code> to <code>${typeof newObj[k]}</code> — BREAKING.</p></div></div>`;
+      }
+    });
+    newKeys.forEach(k=>{
+      if(!(k in oldObj)){
+        safe++;
+        html += `<div class="change safe"><div class="icon green">+</div><div><b>Added: ${k}</b><p>Field <code>${k}</code> was added — SAFE. Existing clients may ignore it.</p></div></div>`;
+      }
+    });
+    const verdict = breaking > 0
+      ? `<div class="verdict">⛔ BREAKING — DO NOT DEPLOY. ${breaking} breaking change(s) detected.</div>`
+      : `<div class="verdict safe">✓ SAFE TO DEPLOY — Only non-breaking additions were detected.</div>`;
+    box.innerHTML = verdict + `<div style="font-size:12px;color:var(--muted);margin:10px 0 12px">Total: ${breaking+safe} • Breaking: ${breaking} • Added: ${safe}</div>` + (html || '<div class="change safe"><div class="icon green">✓</div><div><b>No changes</b><p>The contracts match.</p></div></div>');
+  }catch(e){
+    box.innerHTML = '<div class="verdict">Please check the JSON. One of the inputs is not valid JSON.</div>';
+  }
+}
+// Restores the worked example used for demonstration.
+function loadExample(){
+  document.getElementById('oldInput').value = '{\n  "email": "ada@example.com",\n  "name": "Ada",\n  "age": 30\n}';
+  document.getElementById('newInput').value = '{\n  "name": "Ada",\n  "age": "30",\n  "phone": "+234 800 000 0000"\n}';
+  analysePlayground();
+}
+</script>
+</body>
+</html>

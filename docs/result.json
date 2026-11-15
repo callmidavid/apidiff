@@ -1,0 +1,51 @@
+{
+  "title": "Apidiff — API Contract Check",
+  "endpoint": "GET /v1/users",
+  "old": "https://callmidavid.github.io/apidiff/api/v1.json",
+  "new": "https://topshugar.github.io/apidiff/api/v2.json",
+  "old_label": "v1 — Baseline (David / main)",
+  "new_label": "v2 — Candidate (Temitope / Fusion Contribution)",
+  "checked_at": "15 November 2026, 22:10 WAT",
+  "breaking": true,
+  "summary": {
+    "total": 3,
+    "breaking": 2,
+    "non_breaking": 1,
+    "removed": 1,
+    "added": 1,
+    "type_changed": 1
+  },
+  "changes": [
+    {
+      "type": "removed",
+      "field": "email",
+      "path": "users[].email",
+      "severity": "breaking",
+      "breaking": true,
+      "message": "Removed field: email — BREAKING. Existing clients reading user.email will fail.",
+      "suggestion": "Restore email, or release as /v2/users with a migration note."
+    },
+    {
+      "type": "type_changed",
+      "field": "age",
+      "path": "users[].age",
+      "severity": "breaking",
+      "breaking": true,
+      "old_type": "number",
+      "new_type": "string",
+      "message": "Type changed: age — BREAKING. Changed from number to string. Clients expecting a number will fail.",
+      "suggestion": "Keep age as a number, or coerce consistently across all clients before deployment."
+    },
+    {
+      "type": "added",
+      "field": "phone",
+      "path": "users[].phone",
+      "severity": "non-breaking",
+      "breaking": false,
+      "message": "Added field: phone — SAFE. Backwards compatible; existing clients may ignore it.",
+      "suggestion": "No action required. This change is safe to deploy."
+    }
+  ],
+  "verdict": "⛔ BREAKING CHANGE — DO NOT DEPLOY v2 until email is restored and age is returned as a number, or release as /v2/users",
+  "contributor": "Temitope Abraham Olorunmola, Abuja — Fusion Contribution for github.com/callmidavid/apidiff"
+}
